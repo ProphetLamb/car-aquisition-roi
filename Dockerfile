@@ -11,6 +11,6 @@ COPY src/requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY src/ ./
-EXPOSE 80
+EXPOSE 8000
 
-CMD [ "gunicorn", "--workers=5", "--threads=1", "-b 0.0.0.0:80", "wsgi:server"]
+CMD [ "gunicorn", "-w=4", "-t=1", "car_aquisition_roi:server"]
