@@ -1,9 +1,6 @@
 import pandas as pd
 import plotly.express as px
-import os
 from dash import Dash, html, dcc, callback, Output, Input
-
-debug = os.environ.get('DEBUG', False)
 
 leasing_cost_per_month = 315
 leasing_switch_cost = 500
@@ -264,12 +261,12 @@ def layout():
         className='container',
     )
 
+app = Dash(
+    __name__,
+    external_scripts=external_scripts(),
+    external_stylesheets=external_stylesheets(),
+)
+app.layout = layout()
 
 if __name__ == '__main__':
-    app = Dash(
-        __name__,
-        external_scripts=external_scripts(),
-        external_stylesheets=external_stylesheets(),
-    )
-    app.layout = layout()
-    app.run_server(debug=debug)
+    app.run_server(debug=True)
