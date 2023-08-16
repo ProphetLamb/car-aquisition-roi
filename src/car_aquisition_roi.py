@@ -52,11 +52,15 @@ def update_graph(
     def cost_purchase(age_month, price, initial_years):
         years = purchase_years - initial_years
         car_count = age_month // (years * 12) + 1
+        car_age_months = age_month % (years * 12)
+
         cost_purchase = car_count * price
-        age_month = age_month % (years * 12)
-        years = max(0, repair_free_years - initial_years)
-        cost_repair = max(0, (age_month - years * 12) //
-                          12) * repair_cost_per_year
+
+        car_repairfree_months = max(0, repair_free_years - initial_years) * 12
+        repair_months = max(0, years * 12 - car_repairfree_months) * (car_count - 1)
+        repair_months += max(0, car_age_months - car_repairfree_months)
+        cost_repair  = repair_months * repair_cost_per_year / 12
+
         return cost_purchase + cost_repair
 
     def cost_leasing(age_month):
@@ -64,9 +68,10 @@ def update_graph(
         switch_cost = car_count * leasing_switch_cost
         rate_cost = age_month * leasing_cost_per_month
         return switch_cost + rate_cost
+
     df = pd.DataFrame()
     df['year'] = range(1, 30)
-    df['age'] = df['year'] * 12
+    df['age'] = df['year'] * 6
     df['cost_used_purchase'] = df['age'].apply(
         lambda x: cost_purchase(x, purchase_used_price, purchase_used_age))
     df['cost_new_purchase'] = df['age'].apply(
@@ -190,6 +195,10 @@ def layout():
         marks={i: str(i) for i in range(0, 10+1, 1)},
         id='slider_purchase_used_age'
     )
+
+    def slider_wrapper(slider):
+        return html.Div(slider, className='outline')
+
     return html.Div(
         [
             html.Header(
@@ -214,7 +223,7 @@ def layout():
                     html.Label(
                         [
                             'Laufzeit in Jahren',
-                            slider_leasing_years
+                            slider_wrapper(slider_leasing_years)
                         ],
                         htmlFor='slider_leasing_years',
                     ),
@@ -224,7 +233,7 @@ def layout():
                     html.H2('Kauf'),
                 html.Div([
                     html.Label(
-                        ['Nutzungsdauer in Jahren', slider_purchase_years],
+                        ['Nutzungsdauer in Jahren', slider_wrapper(slider_purchase_years)],
                         htmlFor='slider_purchase_years',
                     ),
                     html.Label(
@@ -236,8 +245,8 @@ def layout():
                         htmlFor='input_purchase_used_price',
                     ),
                     html.Label(
-                        ['Alter des Gebrauchtwagens in Jahren',
-                            slider_purchase_used_age],
+                        ['Gebrauchtwagens Alter in Jahren',
+                            slider_wrapper(slider_purchase_used_age)],
                         htmlFor='slider_purchase_used_age',
                     ),
                 ],
@@ -249,7 +258,7 @@ def layout():
                         htmlFor='input_repair_cost_per_year',
                     ),
                     html.Label(
-                        ['Jahre ohne Reparatur', slider_repair_free_years],
+                        ['Jahre ohne Reparatur', slider_wrapper(slider_repair_free_years)],
                         htmlFor='slider_repair_free_years',
                     ),
                 ],
