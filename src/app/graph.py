@@ -1,6 +1,6 @@
-import pandas as pd
-import plotly.express as px
-from dash import Dash, html, dcc, callback, Output, Input
+import json
+from dash import Dash, html, dcc, callback, clientside_callback, ClientsideFunction, Output, Input
+import plotly.graph_objects as go
 
 leasing_cost_per_month = 315
 leasing_switch_cost = 500
@@ -11,7 +11,6 @@ purchase_used_price = 22000
 purchase_used_age = 2
 repair_cost_per_year = 1500
 repair_free_years = 3
-
 
 @callback(
     Output('graph-content', 'figure'),
@@ -48,69 +47,10 @@ def update_graph(
         purchase_used_age is None
     ):
         return None
-
-    def cost_purchase(age_month, price, initial_years):
-        years = purchase_years - initial_years
-        car_count = age_month // (years * 12) + 1
-        car_age_months = age_month % (years * 12)
-
-        cost_purchase = car_count * price
-
-        car_repairfree_months = max(0, repair_free_years - initial_years) * 12
-        repair_months = max(0, years * 12 - car_repairfree_months) * (car_count - 1)
-        repair_months += max(0, car_age_months - car_repairfree_months)
-        cost_repair  = repair_months * repair_cost_per_year / 12
-
-        return cost_purchase + cost_repair
-
-    def cost_leasing(age_month):
-        car_count = (age_month - 1) // (leasing_years * 12) + 1
-        switch_cost = car_count * leasing_switch_cost
-        rate_cost = age_month * leasing_cost_per_month
-        return switch_cost + rate_cost
-
-    df = pd.DataFrame()
-    df['year'] = range(1, 30)
-    df['age'] = df['year'] * 6
-    df['cost_used_purchase'] = df['age'].apply(
-        lambda x: cost_purchase(x, purchase_used_price, purchase_used_age))
-    df['cost_new_purchase'] = df['age'].apply(
-        lambda x: cost_purchase(x, purchase_new_price, 0))
-    df['cost_leasing'] = df['age'].apply(lambda x: cost_leasing(x))
-
-    # show one graph with age -> {cost_used_purchase, cost_new_purchase, cost_leasing}
-
-    fig = px.line(
-        df,
-        x='year',
-        y=['cost_used_purchase', 'cost_new_purchase', 'cost_leasing'],
-        labels={'year': 'Jahre', 'value': 'Kosten in €'},
-    )
-    fig.update_layout(
-        title="Kostenvergleich zwischen Gebraucht- und Neuwagenkauf und Leasing",
-    )
-    legend = dict({'cost_used_purchase': 'Gebrauchtwagenkauf',
-                   'cost_new_purchase': 'Neuwagenkauf', 'cost_leasing': 'Leasing'})
-    fig.for_each_trace(lambda trace: trace.update(
-        name=legend[trace.name], legendgroup=trace.name))
+    
+    
+    
     return fig
-
-
-def external_stylesheets():
-    return [
-        {
-            'rel': 'stylesheet',
-            'href': 'https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/pico.min.css',
-        }
-    ]
-
-
-def external_scripts():
-    return [
-        {
-            'src': 'https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/postcss.config.min.js'
-        }
-    ]
 
 
 def layout():
@@ -269,14 +209,3 @@ def layout():
         ],
         className='container',
     )
-
-app = Dash(
-    __name__,
-    external_scripts=external_scripts(),
-    external_stylesheets=external_stylesheets(),
-)
-app.layout = layout()
-server = app.server
-
-if __name__ == '__main__':
-    app.run_server(debug=True)
