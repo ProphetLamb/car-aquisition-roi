@@ -1,20 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from dash import Dash, html, dcc, callback, clientside_callback, ClientsideFunction, Output, Input
 import dash_mantine_components as dmc
+import cfg
+import layouter
 
-import pathlib
-import logging
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-client_id = os.getenv('CAR_CLIENT_ID')
-assert client_id, "A shared client id between the server and client is required"
-debug = os.getenv('DEBUG', False)
-origin = os.getenv('ORIGIN', 'http://127.0.0.1:3000')
-host = origin.split('//')[1]
-host, port = host.split(':')
-port = int(port) if port else None
-assert port, "A port must be specified in the ORIGIN environment variable"
+cfg.load()
 
 def external_stylesheets():
     return [
@@ -47,11 +39,11 @@ clientside_callback(
 app.layout = dmc.MantineProvider(
     theme={"colorScheme": "dark", "fontFamily": "'segoe ui', 'Inter', sans-serif"},
     children=[
-        layout(),
+        *layouter.app_layouts,
         dcc.Store(id="timezone", storage_type="memory"),
-        dcc.Store(id="pipe", storage_type="memory", data=origin),
+        dcc.Store(id="pipe", storage_type="memory", data=cfg.origin),
     ]
 )
 
 if __name__ == '__main__':
-    app.run(host=host, port=port, debug=debug, dev_tools_ui=debug, dev_tools_props_check=debug)
+    app.run(host=cfg.host, port=cfg.port, debug=cfg.debug, dev_tools_ui=cfg.debug)

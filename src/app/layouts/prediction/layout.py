@@ -1,6 +1,8 @@
-import json
-from dash import Dash, html, dcc, callback, clientside_callback, ClientsideFunction, Output, Input
+from dash import html, dcc, callback, Output, Input
 import plotly.graph_objects as go
+import asyncio
+
+from layouts.prediction.service import PredictionParameters, get_prediction_data
 
 leasing_cost_per_month = 315
 leasing_switch_cost = 500
@@ -26,30 +28,41 @@ repair_free_years = 3
 )
 def update_graph(
     purchase_years,
-        purchase_new_price,
-        purchase_used_price,
-        leasing_cost_per_month,
-        leasing_switch_cost,
-        leasing_years,
-        repair_cost_per_year,
-        repair_free_years,
-        purchase_used_age
-):
-    if (
-        purchase_years is None or
-        purchase_new_price is None or
-        purchase_used_price is None or
-        leasing_cost_per_month is None or
-        leasing_switch_cost is None or
-        leasing_years is None or
-        repair_cost_per_year is None or
-        repair_free_years is None or
-        purchase_used_age is None
-    ):
+    purchase_new_price,
+    purchase_used_price,
+    leasing_cost_per_month,
+    leasing_switch_cost,
+    leasing_years,
+    repair_cost_per_year,
+    repair_free_years,
+    purchase_used_age
+) -> go.Figure:
+    try:
+        params = PredictionParameters(
+            purchase_years,
+            purchase_new_price,
+            purchase_used_price,
+            leasing_cost_per_month,
+            leasing_switch_cost,
+            leasing_years,
+            repair_cost_per_year,
+            repair_free_years,
+            purchase_used_age
+        )
+        params.ensure_valid()
+    except Exception:
         return None
-    
-    
-    
+
+    try:
+        data = asyncio.run(get_prediction_data(params))
+    except Exception:
+        return None
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data.year, y=data.cost_used_purchase, name='Gebrauchtwagenkauf'))
+    fig.add_trace(go.Scatter(x=data.year, y=data.cost_new_purchase, name='Neuwagenkauf'))
+    fig.add_trace(go.Scatter(x=data.year, y=data.cost_leasing, name='Leasing'))
+
     return fig
 
 
